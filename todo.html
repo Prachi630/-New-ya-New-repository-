@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Meri To-Do List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 50px;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    input[type="text"] {
+      width: 70%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 15px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    li {
+      background: #eee;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .delete-btn {
+      background-color: red;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ HTML Structure -->
+  <div class="container">
+    <h1>Meri To-Do List</h1>
+    <input type="text" id="taskInput" placeholder="Yahan likho..." />
+    <button onclick="addTask()">Add</button>
+
+    <ul id="taskList"></ul>
+  </div>
+
+  <!-- ✅ JavaScript for Functionality -->
+  <script>
+    function addTask() {
+      let input = document.getElementById("taskInput");
+      let task = input.value.trim();
+
+      if (task === "") {
+        alert("Please enter something!");
+        return;
+      }
+
+      // Create new list item
+      let li = document.createElement("li");
+      li.textContent = task;
+
+      // Delete button banate hain
+      let delBtn = document.createElement("button");
+      delBtn.textContent = "Delete";
+      delBtn.className = "delete-btn";
+
+      // Jab delete button click ho
+      delBtn.onclick = function () {
+        li.remove(); // List se item hata do
+      };
+
+      // Button ko list item ke sath jodo
+      li.appendChild(delBtn);
+
+      // List me item add karo
+      document.getElementById("taskList").appendChild(li);
+
+      // Input box saaf karo
+      input.value = "";
+    }
+  </script>
+
+</body>
+</html>
