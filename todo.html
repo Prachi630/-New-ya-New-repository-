@@ -97,26 +97,24 @@
       let li = document.createElement("li");
       li.textContent = task;
 
-      // Delete button banate hain
       let delBtn = document.createElement("button");
       delBtn.textContent = "Delete";
       delBtn.className = "delete-btn";
 
-      // Jab delete button click ho
+   
       delBtn.onclick = function () {
         li.remove(); // List se item hata do
       };
 
-      // Button ko list item ke sath jodo
       li.appendChild(delBtn);
 
-      // List me item add karo
       document.getElementById("taskList").appendChild(li);
 
-      // Input box saaf karo
+    
       input.value = "";
     }
   </script>
 
 </body>
+
 </html>
