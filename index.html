@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unique Tag To-Do List</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa7bf; --accent:#7dd3fc;
+      --maxw:920px;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:Inter,system-ui,Segoe UI,Arial;
+      background:linear-gradient(180deg,#071023 0%, #0b1220 100%);
+      color:#e6eef8;margin:0;min-height:100vh;display:flex;align-items:center;
+      justify-content:center;padding:28px;
+    }
+    .wrap{width:100%;max-width:var(--maxw)}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    h1{margin:0;font-size:20px;letter-spacing:0.6px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    /* styling for our custom tag (unique element) */
+    unique-todo{
+      display:block;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding:18px;border-radius:14px;box-shadow:0 6px 30px rgba(2,6,23,.6);
+    }
+
+    .top-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+    input[type=text], select{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;font-size:14px}
+    button.add{padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,#7dd3fc,#60a5fa);color:#04203a;font-weight:600;cursor:pointer}
+    .controls{display:flex;gap:8px;align-items:center}
+
+    .list{margin-top:12px;display:grid;gap:10px}
+    .item{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent)}
+    .item.done{opacity:0.6;text-decoration:line-through}
+    .drag-handle{cursor:grab;padding:6px;user-select:none}
+
+    .title{flex:1}
+    .meta{display:flex;gap:8px;align-items:center}
+    .chip{padding:6px 10px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 2px 6px rgba(2,6,23,0.5)}
+
+    /* priority colors (applied via class) */
+    .c-red{background:linear-gradient(180deg,#ffb3b3,#ff7a7a);color:#2b0202}
+    .c-yellow{background:linear-gradient(180deg,#fff0b3,#ffd57a);color:#3b2b00}
+    .c-green{background:linear-gradient(180deg,#cffecc,#8ef78e);color:#04320a}
+    .c-blue{background:linear-gradient(180deg,#bbf0ff,#7dd3fc);color:#04203a}
+    .c-purple{background:linear-gradient(180deg,#ecd6ff,#d6b3ff);color:#2b0036}
+
+    .footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px}
+    .actions button{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:10px;color:var(--muted);cursor:pointer}
+
+    .small-toggle, .small-remove{background:transparent;border:0;padding:6px 8px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:700}
+    .small-toggle:hover, .small-remove:hover{color:#fff}
+
+    /* responsive */
+    @media (max-width:620px){
+      .top-row{flex-direction:column}
+      input[type=text]{width:100%}
+      .controls{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Unique-Tag To-Do (Custom Element)</h1>
+        <p class="lead">Use colors to mark priority — drag to reorder, localStorage saves your list.</p>
+      </div>
+      <div style="text-align:right;color:var(--muted);font-size:13px">Offline • LocalStorage</div>
+    </header>
+
+    <!-- unique custom tag -->
+    <unique-todo></unique-todo>
+
+    <footer class="footer">
+      <div>Tip: drag items to reorder (desktop)</div>
+      <div>— Prachi Mishra</div>
+    </footer>
+  </div>
+
+  <script>
+  /* ---------------------
+     Custom elements (light DOM approach)
+     --------------------- */
+
+  class UniqueTodo extends HTMLElement {
+    constructor() {
+      super();
+      // don't use shadow DOM so main CSS applies directly (simpler)
+      this.state = { items: [] };
+      this.innerHTML = this.template();
+    }
+
+    connectedCallback() {
+      this.load();
+      this.bindEvents();
+      this.renderList();
+    }
+
+    template(){
+      return `
+      <div class="top-row">
+        <input class="task-input" type="text" placeholder="Add a task — e.g. Finish portfolio" />
+        <select class="color-select" title="Priority / Color">
+          <option value="c-red">Urgent • Red</option>
+          <option value="c-yellow">High • Yellow</option>
+          <option value="c-green">Normal • Green</option>
+          <option value="c-blue">Low • Blue</option>
+          <option value="c-purple">Idea • Purple</option>
+        </select>
+        <button class="add">Add</button>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <div class="controls">
+          <label style="font-size:13px;color:var(--muted);margin-right:6px">Show:</label>
+          <select class="filter">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px" class="actions">
+          <button class="clear-done">Clear done</button>
+          <button class="clear-all">Clear all</button>
+        </div>
+      </div>
+
+      <div class="list"></div>
+      `;
+    }
+
+    /* ---------- storage ---------- */
+    load(){
+      try {
+        const raw = localStorage.getItem('unique-todo-v1');
+        this.state.items = raw ? JSON.parse(raw) : [];
+      } catch(e) { this.state.items = []; }
+    }
+    save(){
+      localStorage.setItem('unique-todo-v1', JSON.stringify(this.state.items));
+    }
+
+    /* ---------- events ---------- */
+    bindEvents(){
+      const addBtn = this.querySelector('.add');
+      const input = this.querySelector('.task-input');
+      const color = this.querySelector('.color-select');
+
+      addBtn.addEventListener('click', ()=>{
+        this.addTask(input.value.trim(), color.value);
+        input.value = '';
+        input.focus();
+      });
+      input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') addBtn.click(); });
+
+      this.querySelector('.clear-done').addEventListener('click', ()=>{
+        this.state.items = this.state.items.filter(i => !i.done);
+        this.update();
+      });
+      this.querySelector('.clear-all').addEventListener('click', ()=>{
+        if(confirm('Clear all tasks?')){ this.state.items = []; this.update(); }
+      });
+
+      this.querySelector('.filter').addEventListener('change', ()=> this.renderList() );
+
+      // drag & drop (delegate at container)
+      this.addEventListener('dragstart', (e)=>{
+        const id = e.target.dataset?.id;
+        if(!id) return;
+        e.dataTransfer.setData('text/plain', id);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      this.addEventListener('dragover', (e)=> e.preventDefault());
+      this.addEventListener('drop', (e)=>{
+        e.preventDefault();
+        const fromId = e.dataTransfer.getData('text/plain');
+        const toEl = e.target.closest('.item');
+        if(!toEl) return;
+        const toId = toEl.dataset.id;
+        this.reorder(fromId, toId);
+      });
+
+      // delegate toggle/remove clicks
+      this.addEventListener('click', (e)=>{
+        const btn = e.target.closest('[data-action]');
+        if(!btn) return;
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if(action === 'toggle') this.toggle(id);
+        if(action === 'remove') this.remove(id);
+      });
+    }
+
+    /* ---------- CRUD ---------- */
+    addTask(text, colorClass){
+      if(!text) return;
+      const item = { id: Date.now().toString(), text, priority: colorClass, done: false, created: new Date().toISOString() };
+      this.state.items.unshift(item);
+      this.update();
+    }
+    toggle(id){
+      this.state.items = this.state.items.map(i => i.id === id ? {...i, done: !i.done} : i);
+      this.update();
+    }
+    remove(id){
+      this.state.items = this.state.items.filter(i => i.id !== id);
+      this.update();
+    }
+    reorder(fromId, toId){
+      const arr = [...this.state.items];
+      const fromIdx = arr.findIndex(i => i.id === fromId);
+      const toIdx = arr.findIndex(i => i.id === toId);
+      if(fromIdx < 0 || toIdx < 0) return;
+      const [item] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, item);
+      this.state.items = arr;
+      this.update();
+    }
+
+    update(){
+      this.save();
+      this.renderList();
+    }
+
+    /* ---------- rendering ---------- */
+    renderList(){
+      const listEl = this.querySelector('.list');
+      const filter = this.querySelector('.filter')?.value || 'all';
+      const items = this.state.items.filter(i => {
+        if(filter === 'all') return true;
+        if(filter === 'active') return !i.done;
+        if(filter === 'done') return i.done;
+      });
+
+      if(items.length === 0){
+        listEl.innerHTML = `<div style="color:var(--muted);padding:18px;border-radius:10px;border:1px dashed rgba(255,255,255,0.03)">No tasks yet — add one above.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = items.map(it => {
+        const done = it.done ? 'done' : '';
+        return `
+          <div class="item ${done}" draggable="true" data-id="${it.id}">
+            <div class="drag-handle" title="Drag to reorder">☰</div>
+            <div class="title">${escapeHtml(it.text)}</div>
+            <div class="meta">
+              <color-chip class="chip ${it.priority}">${priorityLabel(it.priority)}</color-chip>
+              <button class="small-toggle" data-action="toggle" data-id="${it.id}" title="Toggle done">✓</button>
+              <button class="small-remove" data-action="remove" data-id="${it.id}" title="Remove">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  /* color chip element (small presentational tag) */
+  class ColorChip extends HTMLElement {
+    connectedCallback(){
+      // keeps markup semantic; style comes from page CSS
+      if(!this.innerHTML.trim()) {
+        // if no text provided, try to show label from class
+        this.innerHTML = priorityLabel(this.className || '');
+      }
+    }
+  }
+
+  /* helpers */
+  function priorityLabel(cls){
+    if(cls.includes('c-red')) return 'Urgent';
+    if(cls.includes('c-yellow')) return 'High';
+    if(cls.includes('c-green')) return 'Normal';
+    if(cls.includes('c-blue')) return 'Low';
+    if(cls.includes('c-purple')) return 'Idea';
+    return 'Note';
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  /* register custom elements */
+  customElements.define('unique-todo', UniqueTodo);
+  customElements.define('color-chip', ColorChip);
+
+  </script>
+</body>
+</html>
